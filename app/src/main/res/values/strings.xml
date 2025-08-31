@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Dhaka Bus Finder</string>
+    <string name="find_your_bus">Find Your Bus</string>
+    <string name="from_location">From Location</string>
+    <string name="to_location">To Location</string>
+    <string name="search_buses">Search Buses</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="favorites">Favorites</string>
+    <string name="nearby_stops">Nearby Stops</string>
+    <string name="settings">Settings</string>
+    <string name="recent_searches">Recent Searches</string>
+    <string name="no_recent_searches">No recent searches</string>
+    <string name="search_results">Search Results</string>
+    <string name="no_buses_found">No buses found</string>
+    <string name="try_different_search">Try a different search</string>
+    <string name="view_details">View details</string>
+</resources>

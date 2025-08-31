@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">ঢাকা বাস ফাইন্ডার</string>
+    <string name="find_your_bus">আপনার বাস খুঁজুন</string>
+    <string name="from_location">স্থান থেকে</string>
+    <string name="to_location">স্থানে</string>
+    <string name="search_buses">বাস অনুসন্ধান</string>
+    <string name="quick_actions">দ্রুত কাজ</string>
+    <string name="favorites">প্রিয়</string>
+    <string name="nearby_stops">কাছাকাছি স্টপ</string>
+    <string name="settings">সেটিংস</string>
+    <string name="recent_searches">সাম্প্রতিক অনুসন্ধান</string>
+    <string name="no_recent_searches">কোন সাম্প্রতিক অনুসন্ধান নেই</string>
+    <string name="search_results">অনুসন্ধান ফলাফল</string>
+    <string name="no_buses_found">কোন বাস পাওয়া যায়নি</string>
+    <string name="try_different_search">একটি ভিন্ন অনুসন্ধান চেষ্টা করুন</string>
+    <string name="view_details">বিস্তারিত দেখুন</string>
+</resources>
