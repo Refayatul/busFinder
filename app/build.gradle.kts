@@ -90,6 +90,9 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
 
+    // Material 3 Expressive (added)
+    implementation(libs.androidx.material3.expressive)
+
     // Commented out for Phase 1 - uncomment when needed
     // Google Maps (Phase 3)
     // implementation(libs.google.android.gms.maps)

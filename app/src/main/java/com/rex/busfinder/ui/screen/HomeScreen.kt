@@ -101,20 +101,8 @@ fun HomeScreen(
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
-                    },
-                    actions = {
-                        IconButton(onClick = { /* Navigate to notifications */ }) {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.error
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = "Notifications",
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-                        }
                     }
+                    // Removed actions block with notification button
                 )
             },
             floatingActionButton = {
@@ -388,6 +376,7 @@ fun HomeScreen(
     }
 }
 
+// Rest of the composables remain the same...
 @Composable
 fun QuickActionCard(
     icon: ImageVector,
