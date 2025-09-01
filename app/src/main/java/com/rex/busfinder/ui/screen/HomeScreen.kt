@@ -10,8 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.* // Ensure all Material 3 components are imported
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +60,6 @@ fun HomeScreen(
                             when(destination) {
                                 "map" -> { /* Navigate to map */ }
                                 "favorites" -> { /* Navigate to favorites */ }
-                                "schedule" -> { /* Navigate to schedule */ }
                                 "settings" -> { /* Navigate to settings */ }
                                 "about" -> { /* Navigate to about */ }
                                 "feedback" -> { /* Navigate to feedback */ }
@@ -81,13 +82,15 @@ fun HomeScreen(
                             Text(
                                 text = "Find your bus route easily",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     navigationIcon = {
                         IconButton(onClick = {
@@ -98,11 +101,10 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.Menu,
                                 contentDescription = "Menu",
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    // Removed actions block with notification button
                 )
             },
             floatingActionButton = {
@@ -119,11 +121,17 @@ fun HomeScreen(
                         icon = {
                             Icon(
                                 Icons.Default.Search,
-                                contentDescription = "Search Buses"
+                                contentDescription = "Search Buses",
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         },
-                        text = { Text("Search Buses") },
-                        containerColor = MaterialTheme.colorScheme.primary
+                        text = {
+                            Text(
+                                "Search Buses",
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
                 }
             }
@@ -141,7 +149,8 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                            // IMPROVEMENT: Changed background to surfaceContainerHighest
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                         ),
                         shape = RoundedCornerShape(16.dp)
                     ) {
@@ -154,12 +163,13 @@ fun HomeScreen(
                                 text = "Where would you like to go?",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                // IMPROVEMENT: Changed text color to onSurface for contrast with surfaceContainerHighest
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // From Search Bar
+                            // From Search Bar (assuming SearchBar takes its own colors from theme)
                             SearchBar(
                                 value = fromSearchQuery,
                                 onValueChange = { newValue ->
@@ -192,12 +202,12 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface)
+                                        .background(MaterialTheme.colorScheme.primaryContainer)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.SwapVert,
                                         contentDescription = "Swap locations",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
                             }
@@ -250,12 +260,6 @@ fun HomeScreen(
                                 icon = Icons.Default.Favorite,
                                 title = "Favorites",
                                 onClick = { /* Navigate to favorites */ },
-                                modifier = Modifier.weight(1f)
-                            )
-                            QuickActionCard(
-                                icon = Icons.Default.Schedule,
-                                title = "Schedule",
-                                onClick = { /* Navigate to schedule */ },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -362,7 +366,9 @@ fun HomeScreen(
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -376,7 +382,6 @@ fun HomeScreen(
     }
 }
 
-// Rest of the composables remain the same...
 @Composable
 fun QuickActionCard(
     icon: ImageVector,
@@ -388,7 +393,7 @@ fun QuickActionCard(
         modifier = modifier.height(100.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
         Column(
@@ -401,7 +406,7 @@ fun QuickActionCard(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -409,7 +414,7 @@ fun QuickActionCard(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -426,7 +431,7 @@ fun PopularRouteCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -437,7 +442,7 @@ fun PopularRouteCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.TrendingUp,
+                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                 contentDescription = "Popular",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
@@ -448,10 +453,11 @@ fun PopularRouteCard(
                     Text(
                         text = from,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "to",
                         modifier = Modifier
                             .padding(horizontal = 8.dp)
@@ -461,7 +467,8 @@ fun PopularRouteCard(
                     Text(
                         text = to,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Text(
@@ -511,10 +518,11 @@ fun RecentSearchCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = item.fromLocation,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "to",
                         modifier = Modifier
                             .padding(horizontal = 4.dp)
@@ -523,7 +531,8 @@ fun RecentSearchCard(
                     )
                     Text(
                         text = item.toLocation,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -552,7 +561,7 @@ fun DrawerContent(
                 .fillMaxWidth()
                 .height(150.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -562,19 +571,19 @@ fun DrawerContent(
                     imageVector = Icons.Default.DirectionsBus,
                     contentDescription = "App Logo",
                     modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "BUS Finder",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "Version 1.0.0",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                 )
             }
         }
@@ -597,11 +606,7 @@ fun DrawerContent(
             title = "Favorite Routes",
             onClick = { onNavigate("favorites") }
         )
-        DrawerMenuItem(
-            icon = Icons.Default.Schedule,
-            title = "Bus Schedule",
-            onClick = { onNavigate("schedule") }
-        )
+        // REMOVED: DrawerMenuItem for "Bus Schedule"
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -635,7 +640,7 @@ fun DrawerMenuItem(
             .padding(vertical = 4.dp),
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
             modifier = Modifier
@@ -646,7 +651,7 @@ fun DrawerMenuItem(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
