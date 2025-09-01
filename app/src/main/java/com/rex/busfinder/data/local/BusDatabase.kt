@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.rex.busfinder.data.model.SearchHistoryItem
+import kotlinx.coroutines.flow.Flow
 
 @Database(
     entities = [SearchHistoryItem::class],
@@ -24,7 +25,9 @@ abstract class BusDatabase : RoomDatabase() {
                     context.applicationContext,
                     BusDatabase::class.java,
                     "bus_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // Add this line
+                    .build()
                 INSTANCE = instance
                 instance
             }
@@ -32,14 +35,3 @@ abstract class BusDatabase : RoomDatabase() {
     }
 }
 
-@androidx.room.Dao
-interface SearchHistoryDao {
-    @androidx.room.Query("SELECT * FROM search_history ORDER BY timestamp DESC LIMIT 10")
-    suspend fun getRecentSearches(): List<SearchHistoryItem>
-
-    @androidx.room.Insert
-    suspend fun insertSearch(search: SearchHistoryItem)
-
-    @androidx.room.Query("DELETE FROM search_history")
-    suspend fun clearHistory()
-}

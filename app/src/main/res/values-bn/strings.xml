@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ঢাকা বাস ফাইন্ডার</string>
     <string name="find_your_bus">আপনার বাস খুঁজুন</string>
@@ -14,4 +15,71 @@
     <string name="no_buses_found">কোন বাস পাওয়া যায়নি</string>
     <string name="try_different_search">একটি ভিন্ন অনুসন্ধান চেষ্টা করুন</string>
     <string name="view_details">বিস্তারিত দেখুন</string>
+    <string name="clear_all_recent_searches">সব সাম্প্রতিক অনুসন্ধান মুছুন</string>
+
+    <!-- Additional strings for future features -->
+    <string name="language">ভাষা</string>
+    <string name="theme">থিম</string>
+    <string name="light_theme">লাইট</string>
+    <string name="dark_theme">ডার্ক</string>
+    <string name="blue_theme">ব্লু</string>
+    <string name="english">English</string>
+    <string name="bengali">বাংলা</string>
+    <string name="clear_history">ইতিহাস মুছুন</string>
+    <string name="add_to_favorites">প্রিয়তে যোগ করুন</string>
+    <string name="remove_from_favorites">প্রিয় থেকে সরান</string>
+    <string name="estimated_time">আনুমানিক সময়</string>
+    <string name="distance">দূরত্ব</string>
+    <string name="current_location">বর্তমান অবস্থান</string>
+    <string name="use_current_location">বর্তমান অবস্থান ব্যবহার করুন</string>
+    <string name="route_map">রুট মানচিত্র</string>
+    <string name="bus_schedule">বাস সময়সূচি</string>
+    <string name="community_reports">সম্প্রদায় প্রতিবেদন</string>
+    <string name="add_report">প্রতিবেদন যোগ করুন</string>
+    <string name="traffic_conditions">ট্রাফিক অবস্থা</string>
+    <string name="wait_times">অপেক্ষার সময়</string>
+    <string name="crowd_levels">ভিড়ের মাত্রা</string>
+    <string name="service_type">সেবার ধরণ</string>
+    <string name="forward_route">ফরওয়ার্ড রুট</string>
+    <string name="backward_route">ব্যাকওয়ার্ড রুট</string>
+    <string name="save">সংরক্ষণ</string>
+    <string name="cancel">বাতিল</string>
+    <string name="ok">ঠিক আছে</string>
+    <string name="yes">হ্যাঁ</string>
+    <string name="no">না</string>
+    <string name="delete">মুছুন</string>
+    <string name="edit">সম্পাদনা</string>
+    <string name="share">শেয়ার</string>
+    <string name="about">সম্পর্কে</string>
+    <string name="help">সাহায্য</string>
+    <string name="feedback">প্রতিক্রিয়া</string>
+    <string name="rate_app">অ্যাপ রেট করুন</string>
+    <string name="privacy_policy">গোপনীয়তা নীতি</string>
+    <string name="terms_of_service">সেবার শর্তাবলী</string>
+    <string name="loading">লোড হচ্ছে…</string>
+    <string name="please_wait">অনুগ্রহ করে অপেক্ষা করুন…</string>
+    <string name="error_occurred">একটি ত্রুটি ঘটেছে</string>
+    <string name="retry">পুনরায় চেষ্টা করুন</string>
+    <string name="internet_required">ইন্টারনেট সংযোগ প্রয়োজন</string>
+    <string name="location_permission_required">অবস্থান অনুমতি প্রয়োজন</string>
+    <string name="grant_permission">অনুমতি প্রদান করুন</string>
+    <string name="search_history_cleared">অনুসন্ধান ইতিহাস মুছে ফেলা হয়েছে</string>
+    <string name="added_to_favorites">প্রিয়তে যোগ করা হয়েছে</string>
+    <string name="removed_from_favorites">প্রিয় থেকে সরানো হয়েছে</string>
+    <string name="no_favorites_yet">এখনও কোন প্রিয় নেই</string>
+    <string name="add_favorite_description">বাস অনুসন্ধান করুন এবং দ্রুত অ্যাক্সেসের জন্য আপনার প্রিয়তে যোগ করুন</string>
+    <string name="search_hint">স্থানের নাম লিখুন</string>
+    <string name="popular_routes">জনপ্রিয় রুট</string>
+    <string name="all_buses">সব বাস</string>
+    <string name="my_favorites">আমার প্রিয়</string>
+    <string name="history">ইতিহাস</string>
+    <string name="nearby">কাছাকাছি</string>
+    <string name="map">মানচিত্র</string>
+    <string name="schedule">সময়সূচি</string>
+    <string name="community">সম্প্রদায়</string>
+    <string name="more">আরও</string>
+
+    <!-- Search bar specific strings -->
+    <string name="search_from_hint">স্থান থেকে</string>
+    <string name="search_to_hint">স্থানে</string>
 </resources>

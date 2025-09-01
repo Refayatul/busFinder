@@ -1,6 +1,7 @@
 package com.rex.busfinder.ui.theme
 
 import android.app.Activity
+import android.graphics.Color
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,6 +12,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -63,11 +65,11 @@ enum class Theme {
     LIGHT, DARK, BLUE
 }
 
-val LocalTheme = staticCompositionLocalOf { Theme.LIGHT }
+val LocalTheme = staticCompositionLocalOf { mutableStateOf(Theme.LIGHT) }
 
 @Composable
 fun BUSFinderTheme(
-    theme: MutableState<Theme> = staticCompositionLocalOf { mutableStateOf(Theme.LIGHT) }.current,
+    themeState: MutableState<Theme> = LocalTheme.current,
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
@@ -77,16 +79,25 @@ fun BUSFinderTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
-        theme.value == Theme.BLUE -> BlueColorScheme
+        themeState.value == Theme.DARK -> DarkColorScheme
+        themeState.value == Theme.BLUE -> BlueColorScheme
         else -> LightColorScheme
     }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+
+            // --- FIX START ---
+            // Make the status bar transparent to enable edge-to-edge
+            window.statusBarColor = Color.TRANSPARENT
+            // Use WindowCompat to handle insets
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            // Set the status bar icons and text color
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            // --- FIX END ---
         }
     }
 
