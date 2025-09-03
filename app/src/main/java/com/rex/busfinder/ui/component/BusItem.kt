@@ -18,12 +18,11 @@ import com.rex.busfinder.data.model.BusRoute
 fun BusItem(
     bus: BusRoute,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {},
-    showViewDetails: Boolean = true
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier, // Remove the .clickable here
-        onClick = onClick,   // Use Card's onClick parameter instead
+        modifier = modifier,
+        onClick = onClick,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(

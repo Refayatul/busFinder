@@ -115,7 +115,8 @@ fun HomeScreen(
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = {
-                            viewModel.searchBuses(fromSearchQuery, toSearchQuery)
+                            // Use the enhanced search function that includes multi-hop journeys
+                            viewModel.searchBusesWithConnections(fromSearchQuery, toSearchQuery)
                             navController.navigate("search")
                         },
                         icon = {
@@ -142,21 +143,6 @@ fun HomeScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Test button for debugging
-                item {
-                    Button(
-                        onClick = {
-                            println("=== TEST NAVIGATION DEBUG ===")
-                            navController.navigate("route_details/robrob")
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text("Test Navigate to Achim Paribahan")
-                    }
-                }
-
                 // Hero Section with Search
                 item {
                     Card(
@@ -307,7 +293,7 @@ fun HomeScreen(
                             onClick = {
                                 viewModel.updateFromQuery("Mirpur 10")
                                 viewModel.updateToQuery("Farmgate")
-                                viewModel.searchBuses("Mirpur 10", "Farmgate")
+                                viewModel.searchBusesWithConnections("Mirpur 10", "Farmgate")
                                 navController.navigate("search")
                             }
                         )
@@ -321,7 +307,7 @@ fun HomeScreen(
                             onClick = {
                                 viewModel.updateFromQuery("Uttara")
                                 viewModel.updateToQuery("Motijheel")
-                                viewModel.searchBuses("Uttara", "Motijheel")
+                                viewModel.searchBusesWithConnections("Uttara", "Motijheel")
                                 navController.navigate("search")
                             }
                         )
@@ -362,7 +348,7 @@ fun HomeScreen(
                             onClick = {
                                 viewModel.updateFromQuery(item.fromLocation)
                                 viewModel.updateToQuery(item.toLocation)
-                                viewModel.searchBuses(item.fromLocation, item.toLocation)
+                                viewModel.searchBusesWithConnections(item.fromLocation, item.toLocation)
                                 navController.navigate("search")
                             },
                             modifier = Modifier.padding(horizontal = 16.dp)

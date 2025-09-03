@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -30,23 +29,8 @@ fun RouteDetailsScreen(
     routeId: String,
     viewModel: BusViewModel = viewModel()
 ) {
-    println("=== ROUTE DETAILS SCREEN DEBUG ===")
-    println("RouteDetailsScreen called with routeId: '$routeId'")
-    println("routeId length: ${routeId.length}")
-    println("routeId is blank: ${routeId.isBlank()}")
-    println("routeId characters: ${routeId.toCharArray().contentToString()}")
-
-    // URL decode the routeId in case it was encoded
-    val decodedRouteId = routeId.replace("%20", " ")
-    println("Decoded routeId: '$decodedRouteId'")
-
-    val routeState = viewModel.getBusRoute(decodedRouteId).collectAsState(initial = null)
+    val routeState = viewModel.getBusRoute(routeId).collectAsState(initial = null)
     val route = routeState.value
-
-    println("Route state updated. Route is null: ${route == null}")
-    if (route != null) {
-        println("SUCCESS: Route found - ID: '${route.id}', Name: '${route.name_en}'")
-    }
 
     Scaffold(
         topBar = {
@@ -74,19 +58,10 @@ fun RouteDetailsScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Loading route details...\nLooking for: $decodedRouteId",
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    CircularProgressIndicator()
                 }
             }
             route != null -> {
-                println("Displaying route content for: ${route.name_en}")
                 RouteDetailsContent(
                     modifier = Modifier.padding(padding),
                     route = route
