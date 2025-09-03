@@ -11,41 +11,61 @@ import com.rex.busfinder.data.model.SearchHistoryItem
 import com.rex.busfinder.data.repository.BusRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
+/**
+ * BusViewModel - Central state management for the BUSFinder app
+ *
+ * Responsibilities:
+ * - Manages UI state using LiveData for reactive updates
+ * - Coordinates data operations between UI and Repository
+ * - Implements debounced search suggestions for smooth UX
+ * - Handles search history and user preferences
+ * - Manages loading states and error handling
+ *
+ * Architecture: MVVM - ViewModel acts as bridge between UI (Views) and Data (Repository)
+ * State Management: LiveData for observable data that survives configuration changes
+ * Threading: viewModelScope for coroutine management with automatic cancellation
+ */
 class BusViewModel(application: Application) : AndroidViewModel(application) {
+    // Repository handles all data operations (database, API, file I/O)
     private val repository = BusRepository(application, BusRepository.getSearchHistoryDao(application))
 
-    // Existing LiveData
+    // === CORE DATA STATE ===
+    // All bus routes loaded from JSON - used for search and display
     private val _busRoutes = MutableLiveData<List<BusRoute>>()
     val busRoutes: LiveData<List<BusRoute>> = _busRoutes
 
+    // Current search results - updated when user searches for buses
     private val _searchResults = MutableLiveData<List<BusRoute>>()
     val searchResults: LiveData<List<BusRoute>> = _searchResults
 
+    // Recent search history - persists user searches for quick access
     private val _recentSearches = MutableLiveData<List<SearchHistoryItem>>()
     val recentSearches: LiveData<List<SearchHistoryItem>> = _recentSearches
 
+    // Loading state - shows progress indicators during async operations
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    // --- LiveData for Search Suggestions ---
-
-    // Holds the master list of all stop names
+    // === SEARCH SUGGESTIONS SYSTEM ===
+    // Master list of all stop names for fuzzy search suggestions
     private val _allStopNames = MutableLiveData<List<String>>(emptyList())
 
-    // Holds the user's current input for the 'from' and 'to' fields
+    // User's current input in search fields - triggers suggestion updates
     val fromSearchQuery = MutableLiveData<String>("")
     val toSearchQuery = MutableLiveData<String>("")
 
-    // Holds the filtered list of suggestions for the UI
+    // Filtered suggestions shown in dropdown - updated with 300ms debounce
     private val _fromSuggestions = MediatorLiveData<List<String>>()
     val fromSuggestions: LiveData<List<String>> = _fromSuggestions
 
     private val _toSuggestions = MediatorLiveData<List<String>>()
     val toSuggestions: LiveData<List<String>> = _toSuggestions
 
-    // Debounce jobs for search
+    // Coroutine jobs for debounced search - prevents excessive API calls
     private var fromSearchJob: Job? = null
     private var toSearchJob: Job? = null
 
@@ -105,53 +125,87 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Improved fuzzy search algorithm
+    /**
+     * Advanced fuzzy search algorithm for stop name suggestions
+     * Provides intelligent autocomplete as user types in search fields
+     *
+     * Features:
+     * - Handles typos and partial matches
+     * - Prioritizes exact matches, then prefix matches, then contains matches
+     * - Word boundary matching for compound stop names
+     * - Character sequence matching for misspelled words
+     * - Length-based scoring to prefer more relevant results
+     *
+     * @param query User's search input (can be partial or misspelled)
+     * @param items List of all available stop names to search through
+     * @param limit Maximum number of suggestions to return
+     * @return List of best matching stop names, sorted by relevance
+     */
     private fun fuzzySearch(query: String, items: List<String>, limit: Int = 10): List<String> {
         if (query.isBlank() || items.isEmpty()) return emptyList()
 
         val normalizedQuery = query.trim().lowercase()
 
-        // Calculate scores for each item
+        // Calculate relevance scores for each stop name
         val scoredItems = items.mapNotNull { item ->
             val normalizedItem = item.lowercase()
             val score = calculateFuzzyScore(normalizedQuery, normalizedItem, item)
             if (score > 0) Pair(item, score) else null
         }
 
-        // Sort by score and return top results
+        // Return top matches sorted by score (highest first)
         return scoredItems
             .sortedByDescending { it.second }
             .take(limit)
             .map { it.first }
     }
 
+    /**
+     * Calculates relevance score for fuzzy search matching
+     * Higher scores indicate better matches for user suggestions
+     *
+     * Scoring System (higher = better match):
+     * - Exact match: 1000 points (perfect match)
+     * - Starts with query: +500 points (e.g., "Gab" matches "Gabtoli")
+     * - Contains query: +300 points (e.g., "toli" matches "Gabtoli")
+     * - Word starts with query: +200 points per word (e.g., "Gab" matches "Gabtoli Bus Stand")
+     * - Word contains query: +50 points per word
+     * - Character sequence match: +10 points per consecutive character
+     * - All characters found: +100 points bonus
+     * - Length penalty: -2 points per extra character (prefers concise matches)
+     *
+     * Examples:
+     * - "gab" vs "Gabtoli": 500 (starts with) + 100 (all chars) = 600
+     * - "gab" vs "Gabtoli Bus Stand": 200 (word match) + 100 (all chars) = 300
+     * - "xyz" vs "Mohakhali": 0 (no match)
+     */
     private fun calculateFuzzyScore(query: String, normalizedItem: String, originalItem: String): Int {
         var score = 0
 
-        // Exact match
+        // Perfect match gets highest score
         if (normalizedItem == query) return 1000
 
-        // Starts with query (highest priority)
+        // Prefix match (query at start of item)
         if (normalizedItem.startsWith(query)) {
             score += 500
         }
 
-        // Contains query as a substring
+        // Substring match (query anywhere in item)
         if (normalizedItem.contains(query)) {
             score += 300
         }
 
-        // Word boundary match (each word that starts with query)
+        // Word-level matching for compound names
         val words = normalizedItem.split(" ", "-", ",", ".", "/", "(", ")")
         for (word in words) {
             if (word.startsWith(query)) {
-                score += 200
+                score += 200  // Word starts with query
             } else if (word.contains(query)) {
-                score += 50
+                score += 50   // Word contains query
             }
         }
 
-        // Character sequence match (for typos)
+        // Character-by-character sequence matching (handles typos)
         var queryIndex = 0
         var itemIndex = 0
         var consecutiveMatches = 0
@@ -167,12 +221,12 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
             itemIndex++
         }
 
-        // All query characters found in sequence
+        // Bonus if all query characters were found in sequence
         if (queryIndex == query.length) {
             score += 100
         }
 
-        // Penalty for length difference (prefer shorter, more relevant matches)
+        // Length penalty - prefer shorter, more relevant matches
         val lengthDiff = normalizedItem.length - query.length
         if (lengthDiff > 0) {
             score -= lengthDiff * 2
@@ -292,18 +346,23 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Get a bus route by ID - FIXED: Changed parameter type from Int to String
-    fun getBusRoute(routeId: String): LiveData<BusRoute?> {
-        val result = MutableLiveData<BusRoute?>()
-        viewModelScope.launch {
+    fun getBusRoute(routeId: String): Flow<BusRoute?> {
+        return flow {
+            println("BusViewModel: getBusRoute called for routeId: '$routeId'") // <-- Added log
             try {
                 val route = repository.getBusRoute(routeId)
-                result.value = route
+                if (route != null) {
+                    println("BusViewModel: Found route: ${route.name_en} (ID: ${route.id})") // <-- Added log
+                } else {
+                    println("BusViewModel: No route found for routeId: '$routeId'") // <-- Added log
+                }
+                emit(route)
             } catch (e: Exception) {
                 e.printStackTrace()
-                result.value = null
+                println("BusViewModel: Error getting bus route for routeId '$routeId': ${e.message}") // <-- Added log
+                emit(null)
             }
         }
-        return result
     }
 
     // Get favorite routes

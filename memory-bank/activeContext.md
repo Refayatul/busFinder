@@ -61,6 +61,13 @@
 - **Functions**: camelCase with verb-noun pattern
 - **Variables**: camelCase with meaningful names
 
+### Documentation Standards
+- **Comprehensive Comments**: Add detailed comments explaining complex logic, algorithms, and architecture decisions
+- **Function Documentation**: Include @param and @return tags for public functions
+- **Algorithm Explanations**: Document scoring systems, search algorithms, and business logic with examples
+- **Architecture Comments**: Explain MVVM patterns, data flow, and component responsibilities
+- **Future File Creation**: When creating new files, include extensive comments for group mate understanding
+
 ### Error Handling
 - **Try-Catch**: For database and I/O operations
 - **Sealed Classes**: For representing different states/results

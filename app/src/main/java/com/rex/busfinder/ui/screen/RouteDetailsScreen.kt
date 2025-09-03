@@ -1,12 +1,10 @@
 package com.rex.busfinder.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -15,10 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -33,7 +29,7 @@ fun RouteDetailsScreen(
     routeId: String,
     viewModel: BusViewModel = viewModel()
 ) {
-    val route by viewModel.getBusRoute(routeId).observeAsState()
+    val route by viewModel.getBusRoute(routeId).collectAsState(initial = null)
 
     Scaffold(
         topBar = {
@@ -122,12 +118,12 @@ fun RouteDetailsContent(
                 )
             }
 
-            itemsIndexed(route.routes.backward) { index, stop ->
+            itemsIndexed(route.routes.backward!!) { index, stop ->
                 StopItem(
                     stopName = stop,
                     stopNumber = index + 1,
                     isFirst = index == 0,
-                    isLast = index == route.routes.backward.size - 1,
+                    isLast = index == route.routes.backward!!.size - 1,
                     isBackward = true
                 )
             }

@@ -15,9 +15,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.rex.busfinder.ui.screen.HomeScreen
 import com.rex.busfinder.ui.screen.SearchScreen
+import com.rex.busfinder.ui.screen.RouteDetailsScreen
 import com.rex.busfinder.ui.theme.BUSFinderTheme
 import com.rex.busfinder.viewmodel.BusViewModel
 
+/**
+ * Main Activity - Entry point of the BUSFinder Android application
+ *
+ * Architecture: MVVM (Model-View-ViewModel) with Jetpack Compose
+ * Navigation: Single Activity with multiple Compose screens
+ * State Management: ViewModel with LiveData/Flow for reactive UI updates
+ *
+ * App Flow:
+ * 1. Home Screen - Search interface with recent searches
+ * 2. Search Screen - Results display with bus route list
+ * 3. Route Details Screen - Detailed view of selected bus route
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,25 +40,35 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // Navigation controller manages screen transitions
                     val navController = rememberNavController()
+
+                    // Shared ViewModel for data management across screens
                     val viewModel: BusViewModel = viewModel()
 
+                    // Navigation host defines the app's screen structure
                     NavHost(
                         navController = navController,
-                        startDestination = "home"
+                        startDestination = "home" // App starts on home screen
                     ) {
+                        // Home screen - main search interface
                         composable("home") {
                             HomeScreen(
                                 navController = navController,
                                 viewModel = viewModel
                             )
                         }
+
+                        // Search results screen - displays bus routes
                         composable("search") {
                             SearchScreen(
                                 navController = navController,
                                 viewModel = viewModel
                             )
                         }
+
+                        // Route details screen - shows full route information
+                        // Uses routeId parameter to identify which bus to display
                         composable("route_details/{routeId}") { backStackEntry ->
                             val routeId = backStackEntry.arguments?.getString("routeId") ?: ""
                             RouteDetailsScreen(
