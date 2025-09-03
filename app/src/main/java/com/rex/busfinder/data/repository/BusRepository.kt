@@ -184,66 +184,70 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
     private fun findMultiHopRoutes(allBuses: List<BusRoute>, from: String, to: String): List<BusRoute> {
         val results = mutableSetOf<BusRoute>()
 
-        // First hop: Find buses from starting point
+        println("Repository: Finding multi-hop routes from '$from' to '$to'")
+
+        // First hop: Find buses that serve the starting point
         val firstHopBuses = allBuses.filter { bus ->
-            val allStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-            allStops.any { stop -> normalizeStopName(stop) == from }
+            busServesStop(bus, from)
         }
 
         println("Repository: Found ${firstHopBuses.size} buses from starting point '$from'")
 
-        // Second hop: For each first hop bus, find connecting buses
+        // For each first hop bus, find connecting buses
         for (firstBus in firstHopBuses) {
-            // Get all stops this bus serves
-            val firstBusStops = (firstBus.routes.forward + (firstBus.routes.backward ?: emptyList()))
-                .map { normalizeStopName(it) }
+            // Check if this bus can go directly to destination
+            if (canReachStop(firstBus, from, to)) {
+                results.add(firstBus)
+                println("Repository: Direct route found: ${firstBus.name_en}")
+                continue
+            }
 
-            // For each stop this bus serves (except the starting point), look for connecting buses
-            for (intermediateStop in firstBusStops) {
-                if (intermediateStop == from) continue
+            // Get all stops this bus serves after the starting point
+            val firstBusStops = getBusStops(firstBus)
+            val startIndex = firstBusStops.indexOfFirst { normalizeStopName(it) == from }
 
-                // Find buses that serve this intermediate stop
-                val connectingBuses = allBuses.filter { bus ->
-                    val busStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-                    busStops.any { stop -> normalizeStopName(stop) == intermediateStop }
-                }
+            if (startIndex != -1) {
+                // Check each subsequent stop as a potential transfer point
+                for (i in startIndex + 1 until firstBusStops.size) {
+                    val intermediateStop = firstBusStops[i]
+                    val normalizedIntermediate = normalizeStopName(intermediateStop)
 
-                // Check if any connecting bus can reach the destination
-                for (connectingBus in connectingBuses) {
-                    if (canReachStop(connectingBus, intermediateStop, to)) {
-                        results.add(firstBus)
-                        results.add(connectingBus)
-                        println("Repository: Found connection: ${firstBus.name_en} -> ${connectingBus.name_en} via $intermediateStop")
+                    // Find buses that can go from this intermediate stop to destination
+                    val connectingBuses = allBuses.filter { bus ->
+                        bus.id != firstBus.id &&
+                                busServesStop(bus, intermediateStop) &&
+                                canReachStop(bus, intermediateStop, to)
                     }
 
-                    // Third hop: If still no direct connection, try one more hop
-                    if (results.isEmpty()) {
-                        val secondHopStops = (connectingBus.routes.forward + (connectingBus.routes.backward ?: emptyList()))
-                            .map { normalizeStopName(it) }
-
-                        for (secondIntermediateStop in secondHopStops) {
-                            if (secondIntermediateStop == intermediateStop || secondIntermediateStop == from) continue
-
-                            val finalBuses = allBuses.filter { bus ->
-                                val busStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-                                busStops.any { stop -> normalizeStopName(stop) == secondIntermediateStop }
-                            }
-
-                            for (finalBus in finalBuses) {
-                                if (canReachStop(finalBus, secondIntermediateStop, to)) {
-                                    results.add(firstBus)
-                                    results.add(connectingBus)
-                                    results.add(finalBus)
-                                    println("Repository: Found 3-hop connection: ${firstBus.name_en} -> ${connectingBus.name_en} -> ${finalBus.name_en}")
-                                }
-                            }
-                        }
+                    if (connectingBuses.isNotEmpty()) {
+                        results.add(firstBus)
+                        results.addAll(connectingBuses)
+                        println("Repository: Found connection: ${firstBus.name_en} -> ${connectingBuses.joinToString(", ") { it.name_en ?: it.name }} via $intermediateStop")
+                        break // Found connection, move to next first bus
                     }
                 }
             }
         }
 
         return results.toList().take(10) // Limit to prevent too many results
+    }
+
+    // Helper function to check if a bus serves a particular stop
+    private fun busServesStop(bus: BusRoute, stop: String): Boolean {
+        val normalizedStop = normalizeStopName(stop)
+        val allStops = getBusStops(bus)
+
+        return allStops.any { busStop ->
+            val normalizedBusStop = normalizeStopName(busStop)
+            normalizedBusStop == normalizedStop ||
+                    normalizedBusStop.contains(normalizedStop) ||
+                    normalizedStop.contains(normalizedBusStop)
+        }
+    }
+
+    // Helper function to get all stops for a bus
+    private fun getBusStops(bus: BusRoute): List<String> {
+        return bus.routes.forward + (bus.routes.backward ?: emptyList())
     }
 
     /**
@@ -257,41 +261,7 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
      */
     private fun findDirectBuses(allBuses: List<BusRoute>, from: String, to: String): List<BusRoute> {
         return allBuses.filter { bus ->
-            // Get both forward and backward routes for this bus
-            val forwardRoute = bus.routes.forward
-            val backwardRoute = bus.routes.backward ?: emptyList()
-
-            // Check if bus goes forward from start to end
-            val forwardFromIndex = findStopIndex(forwardRoute, from)
-            val forwardToIndex = findStopIndex(forwardRoute, to)
-            val isForwardValid = forwardFromIndex != -1 &&
-                    forwardToIndex != -1 &&
-                    forwardFromIndex < forwardToIndex
-
-            // Check if bus goes backward from start to end (if backward route exists)
-            val isBackwardValid = if (backwardRoute.isNotEmpty()) {
-                val backwardFromIndex = findStopIndex(backwardRoute, from)
-                val backwardToIndex = findStopIndex(backwardRoute, to)
-                backwardFromIndex != -1 &&
-                        backwardToIndex != -1 &&
-                        backwardFromIndex < backwardToIndex
-            } else {
-                // If no backward route, check if the reverse of forward route works
-                // (useful for buses that can run in reverse direction)
-                val reversedForward = forwardRoute.reversed()
-                val reverseFromIndex = findStopIndex(reversedForward, from)
-                val reverseToIndex = findStopIndex(reversedForward, to)
-                reverseFromIndex != -1 &&
-                        reverseToIndex != -1 &&
-                        reverseFromIndex < reverseToIndex
-            }
-
-            // Debug logging for each bus
-            if (isForwardValid || isBackwardValid) {
-                println("Repository: Direct bus ${bus.name_en} matches - Forward: $isForwardValid, Backward: $isBackwardValid")
-            }
-
-            isForwardValid || isBackwardValid
+            canReachStop(bus, from, to)
         }
     }
 
@@ -316,15 +286,15 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
 
         // Step 1: Find buses that serve the starting location
         val busesFromStart = allBuses.filter { bus ->
-            val allBusStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-            allBusStops.any { stop -> normalizeStopName(stop) == from }
+            busServesStop(bus, from)
         }
 
         // Step 2: Find buses that serve the destination
         val busesToEnd = allBuses.filter { bus ->
-            val allBusStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-            allBusStops.any { stop -> normalizeStopName(stop) == to }
+            busServesStop(bus, to)
         }
+
+        println("Repository: Found ${busesFromStart.size} buses from start, ${busesToEnd.size} buses to end")
 
         // Step 3: Look for buses that share common intermediate stops
         // This creates the "connecting" part of the journey
@@ -334,32 +304,30 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
                 if (startBus.id == endBus.id) continue
 
                 // Find stops that both buses serve (potential transfer points)
-                val startStops = (startBus.routes.forward + (startBus.routes.backward ?: emptyList()))
-                    .map { normalizeStopName(it) }
-                    .toSet()
-
-                val endStops = (endBus.routes.forward + (endBus.routes.backward ?: emptyList()))
-                    .map { normalizeStopName(it) }
-                    .toSet()
+                val startStops = getBusStops(startBus).map { normalizeStopName(it) }.toSet()
+                val endStops = getBusStops(endBus).map { normalizeStopName(it) }.toSet()
 
                 // Find intersection of stops (excluding start and end)
                 val commonStops = startStops.intersect(endStops)
                     .filter { it != from && it != to }
 
+                println("Repository: Bus ${startBus.name_en} and ${endBus.name_en} share ${commonStops.size} common stops")
+
                 if (commonStops.isNotEmpty()) {
                     // Validate that the connection is possible
-                    val startBusCanReachCommon = canReachStop(startBus, from, commonStops.first())
-                    val endBusCanReachFromCommon = canReachStop(endBus, commonStops.first(), to)
+                    val commonStop = commonStops.first()
+                    val startBusCanReachCommon = canReachStop(startBus, from, commonStop)
+                    val endBusCanReachFromCommon = canReachStop(endBus, commonStop, to)
 
                     if (startBusCanReachCommon && endBusCanReachFromCommon) {
                         // Add both buses to results (user will transfer at common stop)
                         if (!results.contains(startBus)) {
                             results.add(startBus)
-                            println("Repository: Added connecting bus ${startBus.name_en} (from $from to ${commonStops.first()})")
+                            println("Repository: Added connecting bus ${startBus.name_en} (from $from to $commonStop)")
                         }
                         if (!results.contains(endBus)) {
                             results.add(endBus)
-                            println("Repository: Added connecting bus ${endBus.name_en} (from ${commonStops.first()} to $to)")
+                            println("Repository: Added connecting bus ${endBus.name_en} (from $commonStop to $to)")
                         }
                     }
                 }
@@ -369,13 +337,12 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
         // Step 4: Fallback strategy - use major interchange points
         if (results.isEmpty()) {
             // Major bus terminals and interchange points in Dhaka
-            val majorStops = listOf("gabtoli", "technical", "shyamoli", "farmgate", "motijheel", "uttara")
+            val majorStops = listOf("gabtoli", "technical", "shyamoli", "farmgate", "motijheel", "uttara", "bashundhara")
 
             for (majorStop in majorStops) {
                 // Find buses that pass through this major stop
                 val busesThroughMajorStop = allBuses.filter { bus ->
-                    val allBusStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-                    allBusStops.any { stop -> normalizeStopName(stop).contains(majorStop) }
+                    busServesStop(bus, majorStop)
                 }
 
                 // Check if any of these buses can connect our start and end points
@@ -402,28 +369,23 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
         val forwardRoute = bus.routes.forward
         val backwardRoute = bus.routes.backward ?: emptyList()
 
+        val normalizedFrom = normalizeStopName(fromStop)
+        val normalizedTo = normalizeStopName(toStop)
+
         // Check forward direction
-        val fromIndex = findStopIndex(forwardRoute, fromStop)
-        val toIndex = findStopIndex(forwardRoute, toStop)
+        val fromIndex = forwardRoute.indexOfFirst { normalizeStopName(it) == normalizedFrom }
+        val toIndex = forwardRoute.indexOfFirst { normalizeStopName(it) == normalizedTo }
         if (fromIndex != -1 && toIndex != -1 && fromIndex < toIndex) {
             return true
         }
 
         // Check backward direction
         if (backwardRoute.isNotEmpty()) {
-            val backFromIndex = findStopIndex(backwardRoute, fromStop)
-            val backToIndex = findStopIndex(backwardRoute, toStop)
+            val backFromIndex = backwardRoute.indexOfFirst { normalizeStopName(it) == normalizedFrom }
+            val backToIndex = backwardRoute.indexOfFirst { normalizeStopName(it) == normalizedTo }
             if (backFromIndex != -1 && backToIndex != -1 && backFromIndex < backToIndex) {
                 return true
             }
-        }
-
-        // Check if reverse of forward route works
-        val reversedForward = forwardRoute.reversed()
-        val revFromIndex = findStopIndex(reversedForward, fromStop)
-        val revToIndex = findStopIndex(reversedForward, toStop)
-        if (revFromIndex != -1 && revToIndex != -1 && revFromIndex < revToIndex) {
-            return true
         }
 
         return false
@@ -440,56 +402,6 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
             .replace(")", "")
             .replace(",", "")
             .replace(".", "")
-    }
-
-    /**
-     * Advanced fuzzy search algorithm to find stop names in bus routes
-     * Handles typos, partial matches, and variations in stop naming
-     *
-     * Matching strategies (in order of priority):
-     * 1. Exact match: "Gabtoli" == "Gabtoli"
-     * 2. Contains match: "Gab" in "Gabtoli" OR "Gabtoli" in "Gab"
-     * 3. Word-by-word match: All words in search must exist in stop name
-     *
-     * Examples:
-     * - "gab" matches "Gabtoli", "Gabtoli Bus Stand"
-     * - "bus stand" matches "Gabtoli Bus Stand", "Mohakhali Bus Stand"
-     * - "moha" matches "Mohakhali", "Mohammadpur"
-     *
-     * @param route List of stop names in the bus route
-     * @param searchStop The stop name to search for
-     * @return Index of the matching stop, or -1 if not found
-     */
-    private fun findStopIndex(route: List<String>, searchStop: String): Int {
-        // Strategy 1: Exact match (highest priority)
-        val exactIndex = route.indexOfFirst { stop ->
-            normalizeStopName(stop) == searchStop
-        }
-
-        if (exactIndex != -1) return exactIndex
-
-        // Strategy 2: Partial/contains matching
-        return route.indexOfFirst { stop ->
-            val normalizedStop = normalizeStopName(stop)
-
-            // Check various matching strategies - return boolean values
-            normalizedStop == searchStop ||
-                    normalizedStop.contains(searchStop) ||
-                    searchStop.contains(normalizedStop) ||
-                    // Word-by-word match (handles compound names)
-                    run {
-                        val stopWords = normalizedStop.split(" ", "-", "/")
-                        val searchWords = searchStop.split(" ", "-", "/")
-
-                        // Check if all search words are present in stop words
-                        // Example: "bus stand" should match "gabtoli bus stand"
-                        searchWords.all { searchWord ->
-                            stopWords.any { stopWord ->
-                                stopWord.contains(searchWord) || searchWord.contains(stopWord)
-                            }
-                        }
-                    }
-        }
     }
 
     suspend fun getBusRoute(routeId: String): BusRoute? {
@@ -607,13 +519,7 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
                 val normalized = normalizeStopName(stopName)
 
                 allBuses.filter { bus ->
-                    val allStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
-                    allStops.any { stop ->
-                        val normalizedStop = normalizeStopName(stop)
-                        normalizedStop == normalized ||
-                                normalizedStop.contains(normalized) ||
-                                normalized.contains(normalizedStop)
-                    }
+                    busServesStop(bus, stopName)
                 }
             } catch (e: Exception) {
                 println("Repository: Error getting buses at stop: ${e.message}")
@@ -715,8 +621,8 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
     private fun findBestIntermediateStop(bus: BusRoute, from: String, to: String): String? {
         val forwardRoute = bus.routes.forward
 
-        val fromIndex = findStopIndex(forwardRoute, from)
-        val toIndex = findStopIndex(forwardRoute, to)
+        val fromIndex = forwardRoute.indexOfFirst { normalizeStopName(it) == from }
+        val toIndex = forwardRoute.indexOfFirst { normalizeStopName(it) == to }
 
         if (fromIndex != -1 && toIndex != -1 && fromIndex < toIndex) {
             // Return the stop just before the destination
