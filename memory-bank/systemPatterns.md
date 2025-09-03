@@ -64,20 +64,36 @@ UI Components → ViewModels → Repository → Database/Local Files
 
 ## Critical Implementation Paths
 
-### Search Flow
-1. User input → SearchBar component
-2. Input validation → BusViewModel
-3. Query execution → BusRepository
-4. Database query → SearchHistoryDao
-5. Results processing → ViewModel state update
-6. UI update → Search results display
+### Advanced Search Flow
+1. **User Input** → SearchBar component with real-time typing
+2. **Debounced Processing** → 300ms delay to prevent excessive API calls
+3. **Fuzzy Search Algorithm** → Multi-strategy matching:
+   - Exact matches (highest priority)
+   - Partial substring matches
+   - Word boundary matches
+   - Character sequence matching (typo tolerance)
+   - Scoring system with weighted results
+4. **Auto-complete Suggestions** → Top 5 matches displayed in dropdown
+5. **Query Execution** → BusRepository.searchBuses() with optimized algorithms
+6. **Search History** → Automatic persistence and deduplication
+7. **Results Processing** → Sorted by relevance score
+8. **UI Update** → LiveData state updates with smooth transitions
 
-### Route Display Flow
-1. Route selection → BusItem click
-2. Navigation trigger → MainActivity
-3. Data loading → BusRepository
-4. JSON parsing → Bus route data
-5. UI rendering → Route detail screen
+### Complete Data Loading Flow
+1. **App Initialization** → BusViewModel.loadBusRoutes()
+2. **JSON Parsing** → BusRepository.getAllBusRoutes()
+3. **Data Validation** → Comprehensive error handling and logging
+4. **Stop Extraction** → BusRepository.getAllStopNames() - 500+ unique stops
+5. **Search Index Building** → Fuzzy search preparation with normalization
+6. **State Management** → LiveData updates with loading/error states
+7. **UI Rendering** → Lazy loading and efficient display
+
+### Navigation & State Flow
+1. **Screen Navigation** → Jetpack Navigation with NavHost
+2. **State Preservation** → ViewModel survives configuration changes
+3. **Search State** → From/to queries maintained across navigation
+4. **History Integration** → Recent searches accessible from any screen
+5. **Back Navigation** → Proper stack management with saved states
 
 ## Database Schema
 - **BusRoute**: Route information with stops and metadata

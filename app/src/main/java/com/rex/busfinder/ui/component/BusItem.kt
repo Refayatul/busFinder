@@ -19,7 +19,8 @@ import com.rex.busfinder.data.model.BusRoute
 fun BusItem(
     bus: BusRoute,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    showViewDetails: Boolean = true
 ) {
     Card(
         modifier = modifier

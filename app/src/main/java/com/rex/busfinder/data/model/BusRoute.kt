@@ -14,3 +14,18 @@ data class Routes(
     val forward: List<String> = emptyList(),
     val backward: List<String>? = null
 )
+
+// Data class for journey segments in multi-route trips
+data class JourneySegment(
+    val bus: BusRoute,
+    val fromStop: String,
+    val toStop: String,
+    val direction: String = "forward" // "forward" or "backward"
+)
+
+// Data class for complete journey with multiple segments
+data class JourneyPlan(
+    val segments: List<JourneySegment>,
+    val totalStops: Int,
+    val estimatedTime: String? = null
+)

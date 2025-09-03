@@ -32,6 +32,7 @@
     <string name="distance">Distance</string>
     <string name="current_location">Current Location</string>
     <string name="use_current_location">Use Current Location</string>
+    <string name="route_details">Route Details</string>
     <string name="route_map">Route Map</string>
     <string name="bus_schedule">Bus Schedule</string>
     <string name="community_reports">Community Reports</string>

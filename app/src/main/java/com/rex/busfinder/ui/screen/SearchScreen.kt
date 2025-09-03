@@ -62,11 +62,9 @@ fun SearchScreen(
     ) { padding ->
         SearchScreenContent(
             modifier = Modifier.padding(padding),
+            navController = navController,
             isLoading = isLoading,
-            searchResults = searchResults,
-            onBusClick = { bus ->
-                // TODO: Navigate to bus details
-            }
+            searchResults = searchResults
         )
     }
 }
@@ -74,9 +72,9 @@ fun SearchScreen(
 @Composable
 fun SearchScreenContent(
     modifier: Modifier = Modifier,
+    navController: NavController,
     isLoading: Boolean,
-    searchResults: List<BusRoute>,
-    onBusClick: (BusRoute) -> Unit
+    searchResults: List<BusRoute>
 ) {
     if (isLoading) {
         Box(
@@ -91,8 +89,8 @@ fun SearchScreenContent(
         } else {
             BusList(
                 modifier = modifier,
-                buses = searchResults,
-                onBusClick = onBusClick
+                navController = navController,
+                buses = searchResults
             )
         }
     }
@@ -129,8 +127,8 @@ fun EmptySearchState() {
 @Composable
 fun BusList(
     modifier: Modifier = Modifier,
-    buses: List<BusRoute>,
-    onBusClick: (BusRoute) -> Unit
+    navController: NavController,
+    buses: List<BusRoute>
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -142,7 +140,9 @@ fun BusList(
                 bus = bus,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onBusClick(bus) }
+                    .clickable {
+                        navController.navigate("route_details/${bus.id}")
+                    }
             )
         }
     }
@@ -161,5 +161,17 @@ fun BusListPreview() {
         BusRoute(id = "1", name_en = "7", name_bn = "৭", routes = Routes(forward = listOf("Gulisthan", "Mirpur 12")), service_type = "Local"),
         BusRoute(id = "2", name_en = "12", name_bn = "১২", routes = Routes(forward = listOf("Motijheel", "Uttara")), service_type = "Counter")
     )
-    BusList(buses = sampleBuses, onBusClick = {})
+    // Note: Preview doesn't work with NavController, so we create a simple version
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(sampleBuses) { bus ->
+            BusItem(
+                bus = bus,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }

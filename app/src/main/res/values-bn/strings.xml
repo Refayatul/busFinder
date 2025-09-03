@@ -32,6 +32,7 @@
     <string name="distance">দূরত্ব</string>
     <string name="current_location">বর্তমান অবস্থান</string>
     <string name="use_current_location">বর্তমান অবস্থান ব্যবহার করুন</string>
+    <string name="route_details">রুট বিস্তারিত</string>
     <string name="route_map">রুট মানচিত্র</string>
     <string name="bus_schedule">বাস সময়সূচি</string>
     <string name="community_reports">সম্প্রদায় প্রতিবেদন</string>

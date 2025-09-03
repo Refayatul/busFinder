@@ -46,6 +46,14 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel
                             )
                         }
+                        composable("route_details/{routeId}") { backStackEntry ->
+                            val routeId = backStackEntry.arguments?.getString("routeId") ?: ""
+                            RouteDetailsScreen(
+                                navController = navController,
+                                routeId = routeId,
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             }

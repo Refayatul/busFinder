@@ -3,18 +3,20 @@
 ## Technology Stack
 
 ### Core Technologies
-- **Language**: Kotlin 1.8+
-- **Platform**: Android API 21+ (Android 5.0+)
-- **Build System**: Gradle with Kotlin DSL
-- **Architecture**: MVVM with Repository pattern
+- **Language**: Kotlin 1.8.10 (Latest stable)
+- **Platform**: Android API 21+ (Android 5.0+) to API 34 (Android 14)
+- **Build System**: Gradle 8.0+ with Kotlin DSL
+- **Architecture**: MVVM with Repository pattern (Production-ready)
 
-### Key Libraries & Frameworks
-- **UI Framework**: Jetpack Compose
-- **Database**: Room 2.5+ (SQLite abstraction)
-- **Dependency Injection**: Hilt (for future scalability)
-- **Async Programming**: Coroutines & Flow
-- **JSON Processing**: Kotlinx.serialization
-- **Material Design**: Material 3 Components
+### Key Libraries & Frameworks (Actual Versions)
+- **UI Framework**: Jetpack Compose BOM (2023.10.01)
+- **Database**: Room 2.6.1 (SQLite abstraction with full type safety)
+- **Async Programming**: Kotlin Coroutines 1.7.3 & Flow
+- **JSON Processing**: Google Gson 2.10.1 (for JSON parsing)
+- **Material Design**: Material 3 Components (2023.10.01)
+- **Navigation**: Jetpack Navigation Compose 2.7.5
+- **Lifecycle**: ViewModel & LiveData 2.7.0
+- **Architecture Components**: Activity Compose 1.8.2
 
 ### Development Tools
 - **IDE**: Android Studio
