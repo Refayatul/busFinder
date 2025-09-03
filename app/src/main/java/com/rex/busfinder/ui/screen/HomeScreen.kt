@@ -142,6 +142,21 @@ fun HomeScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Test button for debugging
+                item {
+                    Button(
+                        onClick = {
+                            println("=== TEST NAVIGATION DEBUG ===")
+                            navController.navigate("route_details/robrob")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text("Test Navigate to Achim Paribahan")
+                    }
+                }
+
                 // Hero Section with Search
                 item {
                     Card(
@@ -149,7 +164,6 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         colors = CardDefaults.cardColors(
-                            // IMPROVEMENT: Changed background to surfaceContainerHighest
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                         ),
                         shape = RoundedCornerShape(16.dp)
@@ -163,13 +177,12 @@ fun HomeScreen(
                                 text = "Where would you like to go?",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                // IMPROVEMENT: Changed text color to onSurface for contrast with surfaceContainerHighest
                                 color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // From Search Bar (assuming SearchBar takes its own colors from theme)
+                            // From Search Bar
                             SearchBar(
                                 value = fromSearchQuery,
                                 onValueChange = { newValue ->
@@ -606,7 +619,6 @@ fun DrawerContent(
             title = "Favorite Routes",
             onClick = { onNavigate("favorites") }
         )
-        // REMOVED: DrawerMenuItem for "Bus Schedule"
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 

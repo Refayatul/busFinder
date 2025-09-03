@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
  * Threading: viewModelScope for coroutine management with automatic cancellation
  */
 class BusViewModel(application: Application) : AndroidViewModel(application) {
-    // Repository handles all data operations (database, API, file I/O)
+    // Repository handles all data operations (database, API, file/I/O)
     private val repository = BusRepository(application, BusRepository.getSearchHistoryDao(application))
 
     // === CORE DATA STATE ===
@@ -345,21 +345,51 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
         _toSuggestions.value = emptyList()
     }
 
-    // Get a bus route by ID - FIXED: Changed parameter type from Int to String
+    // Get a bus route by ID - Enhanced debugging version
     fun getBusRoute(routeId: String): Flow<BusRoute?> {
         return flow {
-            println("BusViewModel: getBusRoute called for routeId: '$routeId'") // <-- Added log
+            println("=== DEBUG: BusViewModel.getBusRoute ===")
+            println("Requested routeId: '$routeId'")
+            println("RouteId length: ${routeId.length}")
+            println("RouteId is blank: ${routeId.isBlank()}")
+
             try {
-                val route = repository.getBusRoute(routeId)
-                if (route != null) {
-                    println("BusViewModel: Found route: ${route.name_en} (ID: ${route.id})") // <-- Added log
-                } else {
-                    println("BusViewModel: No route found for routeId: '$routeId'") // <-- Added log
+                // Load all routes first to ensure we have data
+                val allRoutes = repository.getAllBusRoutes()
+                println("Total routes loaded from repository: ${allRoutes.size}")
+
+                // Log first few routes for debugging
+                allRoutes.take(3).forEach { route ->
+                    println("Available route - ID: '${route.id}', Name: '${route.name_en}'")
                 }
+
+                // Try to find the route
+                val route = allRoutes.find { busRoute ->
+                    val matches = busRoute.id == routeId
+                    if (matches) {
+                        println("MATCH FOUND! Route ID: '${busRoute.id}' matches requested: '$routeId'")
+                    }
+                    matches
+                }
+
+                if (route != null) {
+                    println("SUCCESS: Found route: ${route.name_en ?: route.name} (ID: ${route.id})")
+                    println("Route forward stops count: ${route.routes.forward.size}")
+                    if (route.routes.backward != null) {
+                        println("Route backward stops count: ${route.routes.backward?.size}")
+                    }
+                } else {
+                    println("ERROR: No route found for routeId: '$routeId'")
+                    println("Available route IDs:")
+                    allRoutes.forEach { r ->
+                        println("  - '${r.id}'")
+                    }
+                }
+
                 emit(route)
             } catch (e: Exception) {
+                println("EXCEPTION in getBusRoute: ${e.message}")
                 e.printStackTrace()
-                println("BusViewModel: Error getting bus route for routeId '$routeId': ${e.message}") // <-- Added log
                 emit(null)
             }
         }

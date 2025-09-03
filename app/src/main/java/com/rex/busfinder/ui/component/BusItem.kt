@@ -1,7 +1,6 @@
 package com.rex.busfinder.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -23,8 +22,8 @@ fun BusItem(
     showViewDetails: Boolean = true
 ) {
     Card(
-        modifier = modifier
-            .clickable(onClick = onClick),
+        modifier = modifier, // Remove the .clickable here
+        onClick = onClick,   // Use Card's onClick parameter instead
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(

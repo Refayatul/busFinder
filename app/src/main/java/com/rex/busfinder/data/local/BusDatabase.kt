@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.rex.busfinder.data.model.SearchHistoryItem
-import kotlinx.coroutines.flow.Flow
 
 @Database(
     entities = [SearchHistoryItem::class],
@@ -26,7 +25,7 @@ abstract class BusDatabase : RoomDatabase() {
                     BusDatabase::class.java,
                     "bus_database"
                 )
-                    .fallbackToDestructiveMigration() // Add this line
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
@@ -34,4 +33,3 @@ abstract class BusDatabase : RoomDatabase() {
         }
     }
 }
-
