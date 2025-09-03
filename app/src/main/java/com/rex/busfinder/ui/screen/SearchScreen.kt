@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +31,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -48,6 +51,8 @@ fun SearchScreen(
     val searchResults by viewModel.searchResults.observeAsState(emptyList())
     val isLoading by viewModel.isLoading.observeAsState(false)
     val searchType by viewModel.searchType.observeAsState("")
+    val fromLocation by viewModel.fromSearchQuery.observeAsState("")
+    val toLocation by viewModel.toSearchQuery.observeAsState("")
 
     Scaffold(
         topBar = {
@@ -77,7 +82,9 @@ fun SearchScreen(
             navController = navController,
             isLoading = isLoading,
             searchResults = searchResults,
-            searchType = searchType
+            searchType = searchType,
+            fromLocation = fromLocation,
+            toLocation = toLocation
         )
     }
 }
@@ -88,7 +95,9 @@ fun SearchScreenContent(
     navController: NavController,
     isLoading: Boolean,
     searchResults: List<BusRoute>,
-    searchType: String = ""
+    searchType: String = "",
+    fromLocation: String = "",
+    toLocation: String = ""
 ) {
     if (isLoading) {
         Box(
@@ -105,7 +114,9 @@ fun SearchScreenContent(
                 modifier = modifier,
                 navController = navController,
                 buses = searchResults,
-                searchType = searchType
+                searchType = searchType,
+                fromLocation = fromLocation,
+                toLocation = toLocation
             )
         }
     }
@@ -144,24 +155,63 @@ fun BusList(
     modifier: Modifier = Modifier,
     navController: NavController,
     buses: List<BusRoute>,
-    searchType: String = ""
+    searchType: String = "",
+    fromLocation: String = "",
+    toLocation: String = ""
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Show search type info
+        // Show search info header
         item {
-            if (searchType.isNotBlank()) {
-                Text(
-                    text = "Showing $searchType: ${buses.size} route${if (buses.size != 1) "s" else ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                // Show from and to locations
+                if (fromLocation.isNotBlank() && toLocation.isNotBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = fromLocation,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "to",
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = toLocation,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                // Show search type info
+                if (searchType.isNotBlank()) {
+                    Text(
+                        text = "Showing $searchType: ${buses.size} route${if (buses.size != 1) "s" else ""}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    )
+                }
             }
         }
 

@@ -144,6 +144,108 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
         }
     }
 
+    // Add this new function for multi-hop journey planning
+    suspend fun findMultiHopJourney(from: String, to: String): List<BusRoute> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val allBuses = getAllBusRoutes()
+                val normalizedFrom = normalizeStopName(from)
+                val normalizedTo = normalizeStopName(to)
+
+                println("Repository: Finding multi-hop journey from '$from' to '$to'")
+
+                // First check for direct buses
+                val directResults = findDirectBuses(allBuses, normalizedFrom, normalizedTo)
+                if (directResults.isNotEmpty()) {
+                    println("Repository: Found ${directResults.size} direct buses")
+                    return@withContext directResults
+                }
+
+                // If no direct buses, find multi-hop journey (2 or 3 hops)
+                val multiHopResults = findMultiHopRoutes(allBuses, normalizedFrom, normalizedTo)
+
+                if (multiHopResults.isNotEmpty()) {
+                    println("Repository: Found ${multiHopResults.size} buses for multi-hop journey")
+                    return@withContext multiHopResults
+                }
+
+                // No routes found
+                println("Repository: No routes found for journey from '$from' to '$to'")
+                emptyList()
+            } catch (e: Exception) {
+                println("Repository: Error finding multi-hop journey: ${e.message}")
+                e.printStackTrace()
+                emptyList()
+            }
+        }
+    }
+
+    // Enhanced multi-hop route finder
+    private fun findMultiHopRoutes(allBuses: List<BusRoute>, from: String, to: String): List<BusRoute> {
+        val results = mutableSetOf<BusRoute>()
+
+        // First hop: Find buses from starting point
+        val firstHopBuses = allBuses.filter { bus ->
+            val allStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
+            allStops.any { stop -> normalizeStopName(stop) == from }
+        }
+
+        println("Repository: Found ${firstHopBuses.size} buses from starting point '$from'")
+
+        // Second hop: For each first hop bus, find connecting buses
+        for (firstBus in firstHopBuses) {
+            // Get all stops this bus serves
+            val firstBusStops = (firstBus.routes.forward + (firstBus.routes.backward ?: emptyList()))
+                .map { normalizeStopName(it) }
+
+            // For each stop this bus serves (except the starting point), look for connecting buses
+            for (intermediateStop in firstBusStops) {
+                if (intermediateStop == from) continue
+
+                // Find buses that serve this intermediate stop
+                val connectingBuses = allBuses.filter { bus ->
+                    val busStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
+                    busStops.any { stop -> normalizeStopName(stop) == intermediateStop }
+                }
+
+                // Check if any connecting bus can reach the destination
+                for (connectingBus in connectingBuses) {
+                    if (canReachStop(connectingBus, intermediateStop, to)) {
+                        results.add(firstBus)
+                        results.add(connectingBus)
+                        println("Repository: Found connection: ${firstBus.name_en} -> ${connectingBus.name_en} via $intermediateStop")
+                    }
+
+                    // Third hop: If still no direct connection, try one more hop
+                    if (results.isEmpty()) {
+                        val secondHopStops = (connectingBus.routes.forward + (connectingBus.routes.backward ?: emptyList()))
+                            .map { normalizeStopName(it) }
+
+                        for (secondIntermediateStop in secondHopStops) {
+                            if (secondIntermediateStop == intermediateStop || secondIntermediateStop == from) continue
+
+                            val finalBuses = allBuses.filter { bus ->
+                                val busStops = bus.routes.forward + (bus.routes.backward ?: emptyList())
+                                busStops.any { stop -> normalizeStopName(stop) == secondIntermediateStop }
+                            }
+
+                            for (finalBus in finalBuses) {
+                                if (canReachStop(finalBus, secondIntermediateStop, to)) {
+                                    results.add(firstBus)
+                                    results.add(connectingBus)
+                                    results.add(finalBus)
+                                    println("Repository: Found 3-hop connection: ${firstBus.name_en} -> ${connectingBus.name_en} -> ${finalBus.name_en}")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return results.toList().take(10) // Limit to prevent too many results
+    }
+
     /**
      * Finds buses that go directly from start to end location
      * Checks both forward and backward directions of each bus route

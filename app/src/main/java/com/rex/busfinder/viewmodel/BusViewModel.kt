@@ -50,6 +50,10 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
+    // Search type indicator - shows what kind of search was performed
+    private val _searchType = MutableLiveData<String>() // "direct", "connecting", "multi-hop"
+    val searchType: LiveData<String> = _searchType
+
     // === SEARCH SUGGESTIONS SYSTEM ===
     // Master list of all stop names for fuzzy search suggestions
     private val _allStopNames = MutableLiveData<List<String>>(emptyList())
@@ -296,18 +300,65 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
     fun searchBuses(from: String, to: String) {
         if (from.isBlank() || to.isBlank()) {
             _searchResults.value = emptyList()
+            _searchType.value = ""
             return
         }
 
         viewModelScope.launch {
             _isLoading.value = true
+            _searchType.value = "Searching..."
             try {
                 _searchResults.value = repository.searchBuses(from, to)
+                _searchType.value = "Direct routes"
                 repository.saveSearch(from, to)
                 loadRecentSearches()
             } catch (e: Exception) {
                 e.printStackTrace()
                 _searchResults.value = emptyList()
+                _searchType.value = "Error"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // Enhanced search function with multi-hop journey planning
+    fun searchBusesWithConnections(from: String, to: String) {
+        if (from.isBlank() || to.isBlank()) {
+            _searchResults.value = emptyList()
+            _searchType.value = ""
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _searchType.value = "Searching..."
+            try {
+                // First try direct search
+                val directResults = repository.searchBuses(from, to)
+
+                if (directResults.isNotEmpty()) {
+                    _searchResults.value = directResults
+                    _searchType.value = "Direct routes"
+                    repository.saveSearch(from, to)
+                    loadRecentSearches()
+                } else {
+                    // If no direct results, try multi-hop journey
+                    println("ViewModel: No direct buses found, searching for multi-hop journey")
+                    val multiHopResults = repository.findMultiHopJourney(from, to)
+                    _searchResults.value = multiHopResults
+                    if (multiHopResults.isNotEmpty()) {
+                        _searchType.value = "Connecting routes (multi-hop)"
+                        repository.saveSearch(from, to)
+                        loadRecentSearches()
+                    } else {
+                        _searchType.value = "No routes found"
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _searchResults.value = emptyList()
+                _searchType.value = "Error"
             } finally {
                 _isLoading.value = false
             }
