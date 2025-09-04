@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.TransferWithinAStation
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -204,13 +208,49 @@ fun BusList(
                 // Show search type info
                 if (searchType.isNotBlank()) {
                     Text(
-                        text = "Showing $searchType: ${buses.size} route${if (buses.size != 1) "s" else ""}",
+                        text = when (searchType) {
+                            "Direct routes" -> "Direct bus routes found"
+                            "Connecting routes" -> "Multi-bus journey required"
+                            else -> searchType
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp)
                     )
+                }
+
+                // Show journey type indicator
+                if (searchType == "Connecting routes" && buses.size > 1) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.TransferWithinAStation,
+                                contentDescription = "Transfer required",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "This journey requires transferring between ${buses.size} buses",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -220,7 +260,9 @@ fun BusList(
                 bus = bus,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    navController.navigate("route_details/${bus.id}")
+                    // Pass journey context to route details
+                    val route = "route_details/${bus.id}?from=$fromLocation&to=$toLocation"
+                    navController.navigate(route)
                 }
             )
         }

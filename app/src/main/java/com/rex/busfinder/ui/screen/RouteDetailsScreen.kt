@@ -1,18 +1,21 @@
 package com.rex.busfinder.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,7 +30,10 @@ import com.rex.busfinder.viewmodel.BusViewModel
 fun RouteDetailsScreen(
     navController: NavController,
     routeId: String,
-    viewModel: BusViewModel = viewModel()
+    viewModel: BusViewModel = viewModel(),
+    // Add journey context parameters
+    journeyFrom: String? = null,
+    journeyTo: String? = null
 ) {
     val routeState = viewModel.getBusRoute(routeId).collectAsState(initial = null)
     val route = routeState.value
@@ -64,7 +70,9 @@ fun RouteDetailsScreen(
             route != null -> {
                 RouteDetailsContent(
                     modifier = Modifier.padding(padding),
-                    route = route
+                    route = route,
+                    journeyFrom = journeyFrom,
+                    journeyTo = journeyTo
                 )
             }
         }
@@ -74,7 +82,9 @@ fun RouteDetailsScreen(
 @Composable
 fun RouteDetailsContent(
     modifier: Modifier = Modifier,
-    route: BusRoute
+    route: BusRoute,
+    journeyFrom: String? = null,
+    journeyTo: String? = null
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -84,6 +94,17 @@ fun RouteDetailsContent(
         // Route Header
         item {
             RouteHeaderCard(route = route)
+        }
+
+        // Journey Context Card (if provided)
+        if (journeyFrom != null && journeyTo != null) {
+            item {
+                JourneyContextCard(
+                    route = route,
+                    from = journeyFrom,
+                    to = journeyTo
+                )
+            }
         }
 
         // Service Type
@@ -104,11 +125,16 @@ fun RouteDetailsContent(
         }
 
         itemsIndexed(route.routes.forward) { index, stop ->
+            val isJourneyStart = journeyFrom != null && normalizeStopName(stop) == normalizeStopName(journeyFrom)
+            val isJourneyEnd = journeyTo != null && normalizeStopName(stop) == normalizeStopName(journeyTo)
+
             StopItem(
                 stopName = stop,
                 stopNumber = index + 1,
                 isFirst = index == 0,
-                isLast = index == route.routes.forward.size - 1
+                isLast = index == route.routes.forward.size - 1,
+                isJourneyStart = isJourneyStart,
+                isJourneyEnd = isJourneyEnd
             )
         }
 
@@ -125,14 +151,125 @@ fun RouteDetailsContent(
             }
 
             itemsIndexed(route.routes.backward!!) { index, stop ->
+                val isJourneyStart = journeyFrom != null && normalizeStopName(stop) == normalizeStopName(journeyFrom)
+                val isJourneyEnd = journeyTo != null && normalizeStopName(stop) == normalizeStopName(journeyTo)
+
                 StopItem(
                     stopName = stop,
                     stopNumber = index + 1,
                     isFirst = index == 0,
                     isLast = index == route.routes.backward!!.size - 1,
-                    isBackward = true
+                    isBackward = true,
+                    isJourneyStart = isJourneyStart,
+                    isJourneyEnd = isJourneyEnd
                 )
             }
+        }
+    }
+}
+
+// Helper function to normalize stop names for comparison
+private fun normalizeStopName(stop: String): String {
+    return stop.trim()
+        .lowercase()
+        .replace("–", "-")
+        .replace("—", "-")
+        .replace("  ", " ")
+        .replace("(", "")
+        .replace(")", "")
+        .replace(",", "")
+        .replace(".", "")
+}
+
+@Composable
+fun JourneyContextCard(
+    route: BusRoute,
+    from: String,
+    to: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Start indicator
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DirectionsBus,
+                        contentDescription = "Start",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = from,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "to",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = to,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // End indicator
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Flag,
+                        contentDescription = "End",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onError
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "This route connects your journey from $from to $to",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }
@@ -261,7 +398,9 @@ fun StopItem(
     stopNumber: Int,
     isFirst: Boolean = false,
     isLast: Boolean = false,
-    isBackward: Boolean = false
+    isBackward: Boolean = false,
+    isJourneyStart: Boolean = false,
+    isJourneyEnd: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -269,7 +408,7 @@ fun StopItem(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Timeline indicator
+        // Timeline indicator with journey markers
         Box(
             modifier = Modifier.width(60.dp),
             contentAlignment = Alignment.Center
@@ -292,18 +431,54 @@ fun StopItem(
                     )
                 }
 
-                // Stop circle
+                // Stop circle with journey indicators
                 Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(
-                            color = if (isBackward)
-                                MaterialTheme.colorScheme.secondary
-                            else
-                                MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Base stop circle
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(
+                                color = if (isBackward)
+                                    MaterialTheme.colorScheme.secondary
+                                else
+                                    MaterialTheme.colorScheme.primary
+                            )
+                    )
+
+                    // Journey start indicator
+                    if (isJourneyStart) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color.Transparent)
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
                         )
-                )
+                    }
+
+                    // Journey end indicator
+                    if (isJourneyEnd) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color.Transparent)
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.error,
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
 
                 // Line below (if not last)
                 if (!isLast) {
@@ -345,6 +520,24 @@ fun StopItem(
                     text = if (isBackward) "Final Stop (Return)" else "Final Stop",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Journey indicators
+            if (isJourneyStart) {
+                Text(
+                    text = "Your Journey Starts Here",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (isJourneyEnd) {
+                Text(
+                    text = "Your Destination",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

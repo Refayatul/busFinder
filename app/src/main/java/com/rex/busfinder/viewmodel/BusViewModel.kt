@@ -348,11 +348,12 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
                     val multiHopResults = repository.findMultiHopJourney(from, to)
                     _searchResults.value = multiHopResults
                     if (multiHopResults.isNotEmpty()) {
-                        _searchType.value = "Connecting routes (multi-hop)"
+                        _searchType.value = "Connecting routes"
                         repository.saveSearch(from, to)
                         loadRecentSearches()
                     } else {
                         _searchType.value = "No routes found"
+                        _searchResults.value = emptyList()
                     }
                 }
             } catch (e: Exception) {

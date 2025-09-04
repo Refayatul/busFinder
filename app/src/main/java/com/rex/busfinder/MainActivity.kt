@@ -71,10 +71,18 @@ class MainActivity : ComponentActivity() {
                         // Uses routeId parameter to identify which bus to display
                         composable("route_details/{routeId}") { backStackEntry ->
                             val routeId = backStackEntry.arguments?.getString("routeId") ?: ""
+
+                            // Extract journey context from query parameters if present
+                            val cleanRouteId = routeId.substringBefore("?")
+                            val fromParam = routeId.substringAfter("from=", "").substringBefore("&", "").substringBefore("?", "")
+                            val toParam = routeId.substringAfter("to=", "").substringBefore("?", "")
+
                             RouteDetailsScreen(
                                 navController = navController,
-                                routeId = routeId,
-                                viewModel = viewModel
+                                routeId = cleanRouteId,
+                                viewModel = viewModel,
+                                journeyFrom = if (fromParam.isNotBlank()) fromParam else null,
+                                journeyTo = if (toParam.isNotBlank()) toParam else null
                             )
                         }
                     }

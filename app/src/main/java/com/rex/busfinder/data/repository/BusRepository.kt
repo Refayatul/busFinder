@@ -186,44 +186,56 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
 
         println("Repository: Finding multi-hop routes from '$from' to '$to'")
 
-        // First hop: Find buses that serve the starting point
+        // First hop: Find buses from starting point
         val firstHopBuses = allBuses.filter { bus ->
             busServesStop(bus, from)
         }
 
         println("Repository: Found ${firstHopBuses.size} buses from starting point '$from'")
 
-        // For each first hop bus, find connecting buses
+        // Second hop: For each first hop bus, find connecting buses
         for (firstBus in firstHopBuses) {
-            // Check if this bus can go directly to destination
-            if (canReachStop(firstBus, from, to)) {
-                results.add(firstBus)
-                println("Repository: Direct route found: ${firstBus.name_en}")
-                continue
-            }
-
-            // Get all stops this bus serves after the starting point
+            // Get all stops this bus serves
             val firstBusStops = getBusStops(firstBus)
             val startIndex = firstBusStops.indexOfFirst { normalizeStopName(it) == from }
 
             if (startIndex != -1) {
-                // Check each subsequent stop as a potential transfer point
+                // Check each stop after the starting point as a potential transfer point
                 for (i in startIndex + 1 until firstBusStops.size) {
                     val intermediateStop = firstBusStops[i]
-                    val normalizedIntermediate = normalizeStopName(intermediateStop)
 
-                    // Find buses that can go from this intermediate stop to destination
+                    // Find buses that serve this intermediate stop and can reach destination
                     val connectingBuses = allBuses.filter { bus ->
                         bus.id != firstBus.id &&
                                 busServesStop(bus, intermediateStop) &&
-                                canReachStop(bus, intermediateStop, to)
+                                canReachAnyDirection(bus, intermediateStop, to)
                     }
 
                     if (connectingBuses.isNotEmpty()) {
                         results.add(firstBus)
-                        results.addAll(connectingBuses)
-                        println("Repository: Found connection: ${firstBus.name_en} -> ${connectingBuses.joinToString(", ") { it.name_en ?: it.name }} via $intermediateStop")
-                        break // Found connection, move to next first bus
+                        results.addAll(connectingBuses.take(3)) // Limit connecting buses
+                        println("Repository: Found 2-hop connection: ${firstBus.name_en} -> ${connectingBuses.take(3).joinToString(", ") { it.name_en ?: it.name }} via $intermediateStop")
+                    }
+
+                    // Third hop: Try one more connection if needed
+                    if (results.isEmpty()) {
+                        for (j in i + 1 until firstBusStops.size) {
+                            val secondIntermediateStop = firstBusStops[j]
+
+                            // Find buses that serve second intermediate stop
+                            val secondBuses = allBuses.filter { bus ->
+                                bus.id != firstBus.id &&
+                                        busServesStop(bus, secondIntermediateStop)
+                            }
+
+                            for (secondBus in secondBuses) {
+                                if (canReachAnyDirection(secondBus, secondIntermediateStop, to)) {
+                                    results.add(firstBus)
+                                    results.add(secondBus)
+                                    println("Repository: Found 3-hop connection: ${firstBus.name_en} -> ${secondBus.name_en} via $secondIntermediateStop")
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -261,7 +273,7 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
      */
     private fun findDirectBuses(allBuses: List<BusRoute>, from: String, to: String): List<BusRoute> {
         return allBuses.filter { bus ->
-            canReachStop(bus, from, to)
+            canReachAnyDirection(bus, from, to)
         }
     }
 
@@ -316,8 +328,8 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
                 if (commonStops.isNotEmpty()) {
                     // Validate that the connection is possible
                     val commonStop = commonStops.first()
-                    val startBusCanReachCommon = canReachStop(startBus, from, commonStop)
-                    val endBusCanReachFromCommon = canReachStop(endBus, commonStop, to)
+                    val startBusCanReachCommon = canReachAnyDirection(startBus, from, commonStop)
+                    val endBusCanReachFromCommon = canReachAnyDirection(endBus, commonStop, to)
 
                     if (startBusCanReachCommon && endBusCanReachFromCommon) {
                         // Add both buses to results (user will transfer at common stop)
@@ -347,8 +359,8 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
 
                 // Check if any of these buses can connect our start and end points
                 for (bus in busesThroughMajorStop) {
-                    val canReachFrom = canReachStop(bus, from, majorStop)
-                    val canReachTo = canReachStop(bus, majorStop, to)
+                    val canReachFrom = canReachAnyDirection(bus, from, majorStop)
+                    val canReachTo = canReachAnyDirection(bus, majorStop, to)
 
                     if (canReachFrom && canReachTo && !results.contains(bus)) {
                         results.add(bus)
@@ -364,8 +376,8 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
         return results.take(5) // Return top 5 most relevant connecting buses
     }
 
-    // Helper function to check if a bus can reach from one stop to another
-    private fun canReachStop(bus: BusRoute, fromStop: String, toStop: String): Boolean {
+    // Helper function to check if a bus can reach from one stop to another (any direction)
+    private fun canReachAnyDirection(bus: BusRoute, fromStop: String, toStop: String): Boolean {
         val forwardRoute = bus.routes.forward
         val backwardRoute = bus.routes.backward ?: emptyList()
 
@@ -386,6 +398,14 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
             if (backFromIndex != -1 && backToIndex != -1 && backFromIndex < backToIndex) {
                 return true
             }
+        }
+
+        // Check reverse direction (bus can go in reverse even if not explicitly defined)
+        val reversedForward = forwardRoute.reversed()
+        val revFromIndex = reversedForward.indexOfFirst { normalizeStopName(it) == normalizedFrom }
+        val revToIndex = reversedForward.indexOfFirst { normalizeStopName(it) == normalizedTo }
+        if (revFromIndex != -1 && revToIndex != -1 && revFromIndex < revToIndex) {
+            return true
         }
 
         return false
@@ -620,13 +640,26 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
     // Find the best intermediate stop for a bus route
     private fun findBestIntermediateStop(bus: BusRoute, from: String, to: String): String? {
         val forwardRoute = bus.routes.forward
+        val backwardRoute = bus.routes.backward ?: emptyList()
 
+        // Check forward route
         val fromIndex = forwardRoute.indexOfFirst { normalizeStopName(it) == from }
         val toIndex = forwardRoute.indexOfFirst { normalizeStopName(it) == to }
 
         if (fromIndex != -1 && toIndex != -1 && fromIndex < toIndex) {
             // Return the stop just before the destination
             return forwardRoute.getOrNull(toIndex - 1)
+        }
+
+        // Check backward route
+        if (backwardRoute.isNotEmpty()) {
+            val backFromIndex = backwardRoute.indexOfFirst { normalizeStopName(it) == from }
+            val backToIndex = backwardRoute.indexOfFirst { normalizeStopName(it) == to }
+
+            if (backFromIndex != -1 && backToIndex != -1 && backFromIndex < backToIndex) {
+                // Return the stop just before the destination
+                return backwardRoute.getOrNull(backToIndex - 1)
+            }
         }
 
         return null
@@ -640,7 +673,7 @@ class BusRepository(private val context: Context, private val searchHistoryDao: 
         excludeBusId: String
     ): BusRoute? {
         return allBuses.firstOrNull { bus ->
-            bus.id != excludeBusId && canReachStop(bus, fromStop, toStop)
+            bus.id != excludeBusId && canReachAnyDirection(bus, fromStop, toStop)
         }
     }
 }
